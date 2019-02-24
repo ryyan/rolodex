@@ -96,10 +96,12 @@ func (ab *addressBook) DeleteAddress(id string) error {
 
 			// Delete address if found
 			ab.Addresses = append(ab.Addresses[:i], ab.Addresses[i+1:]...)
+
+			return nil
 		}
 	}
 
-	return nil
+	return errors.New("Address not found")
 }
 
 func (ab *addressBook) ImportCsv() error {
