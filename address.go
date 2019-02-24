@@ -3,6 +3,8 @@ package main
 import (
 	"errors"
 	"math/rand"
+	"sync"
+	"time"
 )
 
 type Address struct {
@@ -14,21 +16,28 @@ type Address struct {
 }
 
 type addressBook struct {
-	Addresses []Address `json:"addresses"`
+	Addresses []Address
+	*sync.Mutex
 }
 
-func NewAddressBook() addressBook {
-	return addressBook{make([]Address, 0)}
+func NewAddressBook() *addressBook {
+	return &addressBook{make([]Address, 0), &sync.Mutex{}}
 }
 
 func (ab *addressBook) GetAddresses() ([]Address, error) {
+	ab.Lock()
+	defer ab.Unlock()
+
 	return ab.Addresses, nil
 }
 
 func (ab *addressBook) GetAddress(id string) (Address, error) {
-	for _, address := range ab.Addresses {
-		if address.ID == id {
-			return address, nil
+	ab.Lock()
+	defer ab.Unlock()
+
+	for i := range ab.Addresses {
+		if ab.Addresses[i].ID == id {
+			return ab.Addresses[i], nil
 		}
 	}
 
@@ -36,6 +45,9 @@ func (ab *addressBook) GetAddress(id string) (Address, error) {
 }
 
 func (ab *addressBook) AddAddress(firstName string, lastName string, email string, phoneNumber string) (Address, error) {
+	ab.Lock()
+	defer ab.Unlock()
+
 	// Verify input
 	if firstName == "" && lastName == "" {
 		return Address{}, errors.New("Must include either first or last name")
@@ -56,6 +68,9 @@ func (ab *addressBook) AddAddress(firstName string, lastName string, email strin
 }
 
 func (ab *addressBook) UpdateAddress(id string, firstName string, lastName string, email string, phoneNumber string) (Address, error) {
+	ab.Lock()
+	defer ab.Unlock()
+
 	// Verify input
 	if id == "" {
 		return Address{}, errors.New("Must pass in ID")
@@ -85,6 +100,9 @@ func (ab *addressBook) UpdateAddress(id string, firstName string, lastName strin
 }
 
 func (ab *addressBook) DeleteAddress(id string) error {
+	ab.Lock()
+	defer ab.Unlock()
+
 	// Verify input
 	if id == "" {
 		return errors.New("Must pass in ID")
@@ -105,19 +123,28 @@ func (ab *addressBook) DeleteAddress(id string) error {
 }
 
 func (ab *addressBook) ImportCsv() error {
+	ab.Lock()
+	defer ab.Unlock()
+
 	return nil
 }
 
 func (ab *addressBook) ExportCsv() error {
+	ab.Lock()
+	defer ab.Unlock()
+
 	return nil
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 func generateID(length int) string {
+	source := rand.NewSource(time.Now().UnixNano())
+	random := rand.New(source)
+
 	b := make([]rune, length)
 	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
+		b[i] = letters[random.Intn(len(letters))]
 	}
 	return string(b)
 }

@@ -7,15 +7,19 @@ import (
 	"strings"
 )
 
-type AddressHandler struct {
-	addressBook
+type addressHandler struct {
+	*addressBook
 }
 
 type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-func (ah AddressHandler) Handle(res http.ResponseWriter, req *http.Request) {
+func NewAddressHandler(ab *addressBook) *addressHandler {
+	return &addressHandler{ab}
+}
+
+func (ah *addressHandler) Handle(res http.ResponseWriter, req *http.Request) {
 	// Log request
 	log.Printf("%s %s %s", req.RemoteAddr, req.Method, req.URL)
 
@@ -29,36 +33,36 @@ func (ah AddressHandler) Handle(res http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (ah AddressHandler) route(req *http.Request) ([]byte, error) {
+func (ah *addressHandler) route(req *http.Request) ([]byte, error) {
 	// Parse path param
-	id := strings.TrimPrefix(req.URL.Path, "/address/")
+	id := strings.TrimLeft(req.URL.Path, "/address")
 
 	switch req.Method {
 	case "GET":
 		if id == "" {
-			result, err := ah.addressBook.GetAddresses()
+			result, err := ah.GetAddresses()
 			resultJson, _ := json.Marshal(result)
 			return resultJson, err
 		} else {
-			result, err := ah.addressBook.GetAddress(id)
+			result, err := ah.GetAddress(id)
 			resultJson, _ := json.Marshal(result)
 			return resultJson, err
 		}
 
 	case "PUT":
 		req.ParseForm()
-		result, err := ah.addressBook.UpdateAddress(id, req.FormValue("firstname"), req.FormValue("lastname"), req.FormValue("email"), req.FormValue("phonenumber"))
+		result, err := ah.UpdateAddress(id, req.FormValue("firstname"), req.FormValue("lastname"), req.FormValue("email"), req.FormValue("phonenumber"))
 		resultJson, _ := json.Marshal(result)
 		return resultJson, err
 
 	case "POST":
 		req.ParseForm()
-		result, err := ah.addressBook.AddAddress(req.FormValue("firstname"), req.FormValue("lastname"), req.FormValue("email"), req.FormValue("phonenumber"))
+		result, err := ah.AddAddress(req.FormValue("firstname"), req.FormValue("lastname"), req.FormValue("email"), req.FormValue("phonenumber"))
 		resultJson, _ := json.Marshal(result)
 		return resultJson, err
 
 	case "DELETE":
-		err := ah.addressBook.DeleteAddress(id)
+		err := ah.DeleteAddress(id)
 		return nil, err
 
 	default:
