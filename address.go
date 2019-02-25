@@ -122,18 +122,18 @@ func (ab *addressBook) DeleteAddress(id string) error {
 	return errors.New("Address not found")
 }
 
-func (ab *addressBook) ImportCsv() error {
+func (ab *addressBook) ImportCsv(csvFile []byte) error {
 	ab.Lock()
 	defer ab.Unlock()
 
 	return nil
 }
 
-func (ab *addressBook) ExportCsv() error {
+func (ab *addressBook) ExportCsv() ([]byte, error) {
 	ab.Lock()
 	defer ab.Unlock()
 
-	return nil
+	return nil, nil
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

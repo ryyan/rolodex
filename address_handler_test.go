@@ -25,9 +25,7 @@ func TestHandler(t *testing.T) {
 	client := http.Client{}
 
 	// Variables used for json unmarshalling
-	var address Address
-	var addressList []Address
-	var errorResponse ErrorResponse
+	var addressResponse addressResponse
 
 	// GET addresses should return empty array
 	response, err := http.Get(server.URL + "/address")
@@ -39,8 +37,8 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ := ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &addressList)
-	if addressList == nil || len(addressList) > 0 {
+	json.Unmarshal(body, &addressResponse)
+	if addressResponse.Rolodex == nil || len(addressResponse.Rolodex) > 0 {
 		t.Error("Address list should be an empty")
 	}
 
@@ -54,8 +52,8 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &errorResponse)
-	if errorResponse.Error != "Address not found" {
+	json.Unmarshal(body, &addressResponse)
+	if addressResponse.Error != "Address not found" {
 		t.Error("Should have error message")
 	}
 
@@ -74,16 +72,16 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &address)
+	json.Unmarshal(body, &addressResponse)
 
 	expected := Address{
-		ID:          address.ID,
+		ID:          addressResponse.Rolodex[0].ID,
 		FirstName:   "myFirstName",
 		LastName:    "myLastName",
 		Email:       "myEmail",
 		PhoneNumber: "myPhoneNumber",
 	}
-	if address != expected {
+	if addressResponse.Rolodex[0] != expected {
 		t.Error("Address returned does not equal expected")
 	}
 
@@ -97,13 +95,14 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &addressList)
-	if addressList == nil || len(addressList) != 1 {
+	json.Unmarshal(body, &addressResponse)
+	if addressResponse.Rolodex == nil || len(addressResponse.Rolodex) != 1 {
 		t.Error("Address list should have 1 element")
 	}
+	firstID := addressResponse.Rolodex[0].ID
 
 	// GET the address created
-	response, err = http.Get(server.URL + "/address/" + address.ID)
+	response, err = http.Get(server.URL + "/address/" + firstID)
 	if err != nil {
 		t.Error(err)
 	}
@@ -112,9 +111,9 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &address)
+	json.Unmarshal(body, &addressResponse)
 
-	if address != expected {
+	if addressResponse.Rolodex[0] != expected {
 		t.Error("Address returned does not equal expected")
 	}
 
@@ -133,8 +132,8 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &address)
-	secondID := address.ID
+	json.Unmarshal(body, &addressResponse)
+	secondID := addressResponse.Rolodex[0].ID
 
 	// PUT to update the address just created
 	form = url.Values{}
@@ -151,7 +150,7 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &address)
+	json.Unmarshal(body, &addressResponse)
 	expected = Address{
 		ID:          secondID,
 		FirstName:   "myFirstName3",
@@ -160,7 +159,7 @@ func TestHandler(t *testing.T) {
 		PhoneNumber: "myPhoneNumber3",
 	}
 
-	if address != expected {
+	if addressResponse.Rolodex[0] != expected {
 		t.Error("Address returned does not equal expected")
 	}
 
@@ -174,8 +173,8 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &addressList)
-	if addressList == nil || len(addressList) != 2 {
+	json.Unmarshal(body, &addressResponse)
+	if addressResponse.Rolodex == nil || len(addressResponse.Rolodex) != 2 {
 		t.Error("Address list should have 2 element")
 	}
 
@@ -199,8 +198,8 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &addressList)
-	if addressList == nil || len(addressList) != 1 {
+	json.Unmarshal(body, &addressResponse)
+	if addressResponse.Rolodex == nil || len(addressResponse.Rolodex) != 1 {
 		t.Error("Address list should have 1 element")
 	}
 
@@ -214,8 +213,8 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &errorResponse)
-	if errorResponse.Error != "Address not found" {
+	json.Unmarshal(body, &addressResponse)
+	if addressResponse.Error != "Address not found" {
 		t.Error("Should have error message")
 	}
 }
