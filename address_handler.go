@@ -40,13 +40,15 @@ func (ah *addressHandler) Handle(res http.ResponseWriter, req *http.Request) {
 
 func (ah *addressHandler) route(req *http.Request) (contentType string, statusCode int, response []byte) {
 	if req.Header.Get("Content-Type") == "application/csv" {
-		statusCode, response := ah.routeCsv(req)
-		return "application/csv", statusCode, response
+		statusCode, response = ah.routeCsv(req)
+		contentType = "application/csv"
 	} else {
 		// By default use json router
-		statusCode, response := ah.routeJson(req)
-		return "application/json", statusCode, response
+		statusCode, response = ah.routeJson(req)
+		contentType = "application/json"
 	}
+
+	return contentType, statusCode, response
 }
 
 func (ah *addressHandler) routeCsv(req *http.Request) (statusCode int, response []byte) {
