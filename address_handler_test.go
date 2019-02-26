@@ -26,6 +26,7 @@ func TestHandler(t *testing.T) {
 
 	// Variables used for json unmarshalling
 	var addressResponse addressResponse
+	var errorResponse errorResponse
 
 	// GET addresses should return empty array
 	response, err := http.Get(server.URL + "/address")
@@ -52,8 +53,8 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &addressResponse)
-	if addressResponse.Error != "Address not found" {
+	json.Unmarshal(body, &errorResponse)
+	if errorResponse.Error != "Address not found" {
 		t.Error("Should have error message")
 	}
 
@@ -213,8 +214,22 @@ func TestHandler(t *testing.T) {
 	}
 
 	body, _ = ioutil.ReadAll(response.Body)
-	json.Unmarshal(body, &addressResponse)
-	if addressResponse.Error != "Address not found" {
+	json.Unmarshal(body, &errorResponse)
+	if errorResponse.Error != "Address not found" {
 		t.Error("Should have error message")
 	}
+}
+
+func TestHandlerCsv(t *testing.T) {
+	// Initialize handler
+	addressBook := NewAddressBook()
+	addressHandler := NewAddressHandler(addressBook)
+
+	// Initialize server
+	server := httptest.NewServer(http.HandlerFunc(addressHandler.Handle))
+	defer server.Close()
+	time.Sleep(100)
+
+	// Initialize client
+	//client := http.Client{}
 }

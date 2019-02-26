@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -13,18 +14,14 @@ type addressHandler struct {
 
 type addressResponse struct {
 	Rolodex []Address `json:"rolodex"`
-	Error   string    `json:"error"`
+}
+
+type errorResponse struct {
+	Error string `json:"error"`
 }
 
 func NewAddressHandler(ab *addressBook) *addressHandler {
 	return &addressHandler{ab}
-}
-
-func NewAddressResponse(response []Address, err error) addressResponse {
-	if err != nil {
-		return addressResponse{response, err.Error()}
-	}
-	return addressResponse{response, ""}
 }
 
 func (ah *addressHandler) Handle(res http.ResponseWriter, req *http.Request) {
@@ -52,7 +49,23 @@ func (ah *addressHandler) route(req *http.Request) (contentType string, statusCo
 }
 
 func (ah *addressHandler) routeCsv(req *http.Request) (statusCode int, response []byte) {
-	return http.StatusOK, nil
+	var err error
+
+	switch req.Method {
+	case "GET":
+		response, err = ah.ExportCsv()
+
+	case "POST":
+		body, _ := ioutil.ReadAll(req.Body)
+		err = ah.ImportCsv(body)
+	}
+
+	statusCode = http.StatusOK
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		response, _ = json.Marshal(errorResponse{err.Error()})
+	}
+	return statusCode, response
 }
 
 func (ah *addressHandler) routeJson(req *http.Request) (statusCode int, response []byte) {
@@ -86,11 +99,13 @@ func (ah *addressHandler) routeJson(req *http.Request) (statusCode int, response
 		err = ah.DeleteAddress(id)
 	}
 
-	// Return json response
-	response, _ = json.Marshal(NewAddressResponse(result, err))
-	statusCode = http.StatusOK
+	// Return response
 	if err != nil {
 		statusCode = http.StatusBadRequest
+		response, _ = json.Marshal(errorResponse{err.Error()})
+	} else {
+		statusCode = http.StatusOK
+		response, _ = json.Marshal(addressResponse{result})
 	}
 	return statusCode, response
 }
