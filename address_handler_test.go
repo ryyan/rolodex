@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -98,7 +99,7 @@ func TestHandler(t *testing.T) {
 	body, _ = ioutil.ReadAll(response.Body)
 	json.Unmarshal(body, &addressResponse)
 	if addressResponse.Rolodex == nil || len(addressResponse.Rolodex) != 1 {
-		t.Error("Address list should have 1 element")
+		t.Error("Address list should have 1 elements")
 	}
 	firstID := addressResponse.Rolodex[0].ID
 
@@ -176,7 +177,7 @@ func TestHandler(t *testing.T) {
 	body, _ = ioutil.ReadAll(response.Body)
 	json.Unmarshal(body, &addressResponse)
 	if addressResponse.Rolodex == nil || len(addressResponse.Rolodex) != 2 {
-		t.Error("Address list should have 2 element")
+		t.Error("Address list should have 2 elements")
 	}
 
 	// DELETE the second created address
@@ -201,7 +202,7 @@ func TestHandler(t *testing.T) {
 	body, _ = ioutil.ReadAll(response.Body)
 	json.Unmarshal(body, &addressResponse)
 	if addressResponse.Rolodex == nil || len(addressResponse.Rolodex) != 1 {
-		t.Error("Address list should have 1 element")
+		t.Error("Address list should have 1 elements")
 	}
 
 	// GET an address that does not exist should return error
@@ -231,5 +232,60 @@ func TestHandlerCsv(t *testing.T) {
 	time.Sleep(100)
 
 	// Initialize client
-	//client := http.Client{}
+	client := http.Client{}
+
+	// Variables used for json unmarshalling
+	var addressResponse addressResponse
+
+	// POST to import a CSV
+	csvImport := `firstname,lastname,email,phonenumber
+firstname1,lastname1,email1,phoneumber1
+firstname2,lastname2,email2,phoneumber2
+firstname3,lastname3,email3,phoneumber3
+firstname4,lastname4,email4,phoneumber4
+`
+	request, _ := http.NewRequest("POST", server.URL+"/address", strings.NewReader(csvImport))
+	request.Header.Add("Content-Type", "text/csv")
+	response, err := client.Do(request)
+	if err != nil {
+		t.Error(err)
+	}
+	if response.StatusCode != 200 {
+		t.Error("Should return 200")
+	}
+
+	// GET all addresses should have 4
+	response, err = http.Get(server.URL + "/address")
+	if err != nil {
+		t.Error(err)
+	}
+	if response.StatusCode != 200 {
+		t.Error("Should return 200")
+	}
+
+	body, _ := ioutil.ReadAll(response.Body)
+	json.Unmarshal(body, &addressResponse)
+	if addressResponse.Rolodex == nil || len(addressResponse.Rolodex) != 4 {
+		t.Error("Address list should have 4 elements")
+	}
+
+	// GET to export a CSV
+	request, _ = http.NewRequest("GET", server.URL+"/address", nil)
+	request.Header.Add("Content-Type", "text/csv")
+	response, err = client.Do(request)
+	if err != nil {
+		t.Error(err)
+	}
+	if response.StatusCode != 200 {
+		t.Error("Should return 200")
+	}
+
+	r := csv.NewReader(response.Body)
+	records, err := r.ReadAll()
+	if err != nil {
+		t.Error(err)
+	}
+	if len(records) != 5 {
+		t.Error("Records should have 5 elements")
+	}
 }

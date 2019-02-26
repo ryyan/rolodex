@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -36,9 +35,9 @@ func (ah *addressHandler) Handle(res http.ResponseWriter, req *http.Request) {
 }
 
 func (ah *addressHandler) route(req *http.Request) (contentType string, statusCode int, response []byte) {
-	if req.Header.Get("Content-Type") == "application/csv" {
+	if req.Header.Get("Content-Type") == "text/csv" {
 		statusCode, response = ah.routeCsv(req)
-		contentType = "application/csv"
+		contentType = "text/csv"
 	} else {
 		// By default use json router
 		statusCode, response = ah.routeJson(req)
@@ -56,14 +55,14 @@ func (ah *addressHandler) routeCsv(req *http.Request) (statusCode int, response 
 		response, err = ah.ExportCsv()
 
 	case "POST":
-		body, _ := ioutil.ReadAll(req.Body)
-		err = ah.ImportCsv(body)
+		err = ah.ImportCsv(req.Body)
 	}
 
-	statusCode = http.StatusOK
 	if err != nil {
 		statusCode = http.StatusBadRequest
 		response, _ = json.Marshal(errorResponse{err.Error()})
+	} else {
+		statusCode = http.StatusOK
 	}
 	return statusCode, response
 }

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"encoding/csv"
 	"errors"
+	"io"
 	"math/rand"
+	"strings"
 	"sync"
 	"time"
 )
@@ -122,9 +125,37 @@ func (ab *addressBook) DeleteAddress(id string) error {
 	return errors.New("Address not found")
 }
 
-func (ab *addressBook) ImportCsv(csvFile []byte) error {
+func (ab *addressBook) ImportCsv(csvFile io.ReadCloser) error {
 	ab.Lock()
 	defer ab.Unlock()
+	defer csvFile.Close()
+
+	csvReader := csv.NewReader(csvFile)
+
+	for {
+		record, err := csvReader.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		if len(record) != 4 {
+			return errors.New("Expected 4 fields when importing CSV")
+		}
+		if record[0] == "firstname" && record[1] == "lastname" {
+			// Skip header row
+			continue
+		}
+
+		address := Address{
+			FirstName:   record[0],
+			LastName:    record[1],
+			Email:       record[2],
+			PhoneNumber: record[3],
+		}
+		ab.Addresses = append(ab.Addresses, address)
+	}
 
 	return nil
 }
@@ -133,7 +164,21 @@ func (ab *addressBook) ExportCsv() ([]byte, error) {
 	ab.Lock()
 	defer ab.Unlock()
 
-	return nil, nil
+	var sb strings.Builder
+	sb.WriteString("firstname,lastname,email,phonenumber\n")
+
+	for _, address := range ab.Addresses {
+		sb.WriteString(address.FirstName)
+		sb.WriteString(",")
+		sb.WriteString(address.LastName)
+		sb.WriteString(",")
+		sb.WriteString(address.Email)
+		sb.WriteString(",")
+		sb.WriteString(address.PhoneNumber)
+		sb.WriteString("\n")
+	}
+
+	return []byte(sb.String()), nil
 }
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
