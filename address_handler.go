@@ -32,51 +32,69 @@ func (ah *addressHandler) Handle(res http.ResponseWriter, req *http.Request) {
 	log.Printf("%s %s %s", req.RemoteAddr, req.Method, req.URL)
 
 	// Route request
-	result, err := ah.route(req)
+	contentType, statusCode, response := ah.route(req)
 
-	// Return json response
-	resultJson, _ := json.Marshal(NewAddressResponse(result, err))
-	statusCode := http.StatusOK
-	if err != nil {
-		statusCode = http.StatusBadRequest
-	}
-	writeJsonResponse(res, statusCode, resultJson)
+	// Write response
+	writeResponse(res, contentType, statusCode, response)
 }
 
-func (ah *addressHandler) route(req *http.Request) ([]Address, error) {
+func (ah *addressHandler) route(req *http.Request) (contentType string, statusCode int, response []byte) {
+	if req.Header.Get("Content-Type") == "application/csv" {
+		statusCode, response := ah.routeCsv(req)
+		return "application/csv", statusCode, response
+	} else {
+		// By default use json router
+		statusCode, response := ah.routeJson(req)
+		return "application/json", statusCode, response
+	}
+}
+
+func (ah *addressHandler) routeCsv(req *http.Request) (statusCode int, response []byte) {
+	return http.StatusOK, nil
+}
+
+func (ah *addressHandler) routeJson(req *http.Request) (statusCode int, response []byte) {
+	var address Address
+	var result []Address
+	var err error
+
 	// Parse path param
 	id := strings.TrimLeft(req.URL.Path, "/address")
 
 	switch req.Method {
 	case "GET":
 		if id == "" {
-			return ah.GetAddresses()
+			result, err = ah.GetAddresses()
 		} else {
-			result, err := ah.GetAddress(id)
-			return []Address{result}, err
+			address, err = ah.GetAddress(id)
+			result = []Address{address}
 		}
 
 	case "PUT":
 		req.ParseForm()
-		result, err := ah.UpdateAddress(id, req.FormValue("firstname"), req.FormValue("lastname"), req.FormValue("email"), req.FormValue("phonenumber"))
-		return []Address{result}, err
+		address, err = ah.UpdateAddress(id, req.FormValue("firstname"), req.FormValue("lastname"), req.FormValue("email"), req.FormValue("phonenumber"))
+		result = []Address{address}
 
 	case "POST":
 		req.ParseForm()
-		result, err := ah.AddAddress(req.FormValue("firstname"), req.FormValue("lastname"), req.FormValue("email"), req.FormValue("phonenumber"))
-		return []Address{result}, err
+		address, err = ah.AddAddress(req.FormValue("firstname"), req.FormValue("lastname"), req.FormValue("email"), req.FormValue("phonenumber"))
+		result = []Address{address}
 
 	case "DELETE":
-		err := ah.DeleteAddress(id)
-		return nil, err
-
-	default:
-		return nil, nil
+		err = ah.DeleteAddress(id)
 	}
+
+	// Return json response
+	response, _ = json.Marshal(NewAddressResponse(result, err))
+	statusCode = http.StatusOK
+	if err != nil {
+		statusCode = http.StatusBadRequest
+	}
+	return statusCode, response
 }
 
-func writeJsonResponse(res http.ResponseWriter, statusCode int, message []byte) {
-	res.Header().Set("Content-Type", "application/json")
+func writeResponse(res http.ResponseWriter, contentType string, statusCode int, message []byte) {
+	res.Header().Set("Content-Type", contentType)
 	res.WriteHeader(statusCode)
 	res.Write(message)
 }
