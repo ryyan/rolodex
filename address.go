@@ -18,6 +18,7 @@ type Address struct {
 	PhoneNumber string
 }
 
+// addressBook holds the list of addresses
 type addressBook struct {
 	Addresses []Address
 	*sync.Mutex
@@ -27,6 +28,7 @@ func NewAddressBook() *addressBook {
 	return &addressBook{make([]Address, 0), &sync.Mutex{}}
 }
 
+// GetAddresses returns the list of all addresses
 func (ab *addressBook) GetAddresses() ([]Address, error) {
 	ab.Lock()
 	defer ab.Unlock()
@@ -34,6 +36,7 @@ func (ab *addressBook) GetAddresses() ([]Address, error) {
 	return ab.Addresses, nil
 }
 
+// GetAddress returns an address by ID
 func (ab *addressBook) GetAddress(id string) (Address, error) {
 	ab.Lock()
 	defer ab.Unlock()
@@ -47,6 +50,7 @@ func (ab *addressBook) GetAddress(id string) (Address, error) {
 	return Address{}, errors.New("Address not found")
 }
 
+// AddAddress adds an address and returns the newly created address
 func (ab *addressBook) AddAddress(firstName string, lastName string, email string, phoneNumber string) (Address, error) {
 	ab.Lock()
 	defer ab.Unlock()
@@ -70,6 +74,7 @@ func (ab *addressBook) AddAddress(firstName string, lastName string, email strin
 	return address, nil
 }
 
+// UpdateAddress updates an address and returns the updated address
 func (ab *addressBook) UpdateAddress(id string, firstName string, lastName string, email string, phoneNumber string) (Address, error) {
 	ab.Lock()
 	defer ab.Unlock()
@@ -102,6 +107,7 @@ func (ab *addressBook) UpdateAddress(id string, firstName string, lastName strin
 	return Address{}, errors.New("Address not found")
 }
 
+// DeleteAddress deletes an address
 func (ab *addressBook) DeleteAddress(id string) error {
 	ab.Lock()
 	defer ab.Unlock()
@@ -125,13 +131,14 @@ func (ab *addressBook) DeleteAddress(id string) error {
 	return errors.New("Address not found")
 }
 
+// ImportCsv adds a list of addresses based on the passed in csv
 func (ab *addressBook) ImportCsv(csvFile io.ReadCloser) error {
 	ab.Lock()
 	defer ab.Unlock()
+
 	defer csvFile.Close()
 
 	csvReader := csv.NewReader(csvFile)
-
 	for {
 		record, err := csvReader.Read()
 		if err == io.EOF {
@@ -160,6 +167,7 @@ func (ab *addressBook) ImportCsv(csvFile io.ReadCloser) error {
 	return nil
 }
 
+// ExportCsv returns a csv file of the list of all addresses
 func (ab *addressBook) ExportCsv() ([]byte, error) {
 	ab.Lock()
 	defer ab.Unlock()
@@ -183,6 +191,7 @@ func (ab *addressBook) ExportCsv() ([]byte, error) {
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+// generateID returns a randomly generated string
 func generateID(length int) string {
 	source := rand.NewSource(time.Now().UnixNano())
 	random := rand.New(source)

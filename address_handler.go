@@ -23,6 +23,7 @@ func NewAddressHandler(ab *addressBook) *addressHandler {
 	return &addressHandler{ab}
 }
 
+// Handle satisfies the http.Handler for the address endpoint
 func (ah *addressHandler) Handle(res http.ResponseWriter, req *http.Request) {
 	// Log request
 	log.Printf("%s %s %s", req.RemoteAddr, req.Method, req.URL)
@@ -34,19 +35,19 @@ func (ah *addressHandler) Handle(res http.ResponseWriter, req *http.Request) {
 	writeResponse(res, contentType, statusCode, response)
 }
 
+// route routes a request to an appropriate content type router
 func (ah *addressHandler) route(req *http.Request) (contentType string, statusCode int, response []byte) {
 	if req.Header.Get("Content-Type") == "text/csv" {
 		statusCode, response = ah.routeCsv(req)
-		contentType = "text/csv"
+		return "text/csv", statusCode, response
 	} else {
 		// By default use json router
 		statusCode, response = ah.routeJson(req)
-		contentType = "application/json"
+		return "application/json", statusCode, response
 	}
-
-	return contentType, statusCode, response
 }
 
+// routeCsv routes a request to a csv method
 func (ah *addressHandler) routeCsv(req *http.Request) (statusCode int, response []byte) {
 	var err error
 
@@ -67,6 +68,7 @@ func (ah *addressHandler) routeCsv(req *http.Request) (statusCode int, response 
 	return statusCode, response
 }
 
+// routeJson routes a request to a json method
 func (ah *addressHandler) routeJson(req *http.Request) (statusCode int, response []byte) {
 	var address Address
 	var result []Address
@@ -109,6 +111,7 @@ func (ah *addressHandler) routeJson(req *http.Request) (statusCode int, response
 	return statusCode, response
 }
 
+// writeResponse writes a byte message to an http response writer
 func writeResponse(res http.ResponseWriter, contentType string, statusCode int, message []byte) {
 	res.Header().Set("Content-Type", contentType)
 	res.WriteHeader(statusCode)
